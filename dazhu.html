@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>大竹院區 領藥順序</title>
+<script src="config.js"></script>
+<style>
+  :root {
+    --green: #1a7f4e;
+    --green-dark: #135c39;
+    --bg: #f4f9f6;
+    --card: #ffffff;
+    --text: #1c2b24;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Microsoft JhengHei", "PingFang TC", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    background: var(--green);
+    color: #fff;
+    padding: 18px 28px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  header h1 { font-size: clamp(26px, 4vw, 44px); font-weight: 700; }
+  #status { font-size: clamp(14px, 1.6vw, 20px); opacity: .9; text-align: right; }
+  #stale {
+    display: none;
+    background: #c0392b;
+    color: #fff;
+    text-align: center;
+    padding: 8px;
+    font-size: clamp(14px, 1.8vw, 20px);
+  }
+  main { flex: 1; padding: 24px; }
+  #now-card {
+    background: var(--green);
+    color: #fff;
+    border-radius: 20px;
+    padding: 26px 30px;
+    margin-bottom: 24px;
+    display: none;
+    align-items: center;
+    gap: 26px;
+    box-shadow: 0 6px 18px rgba(26,127,78,.3);
+  }
+  #now-card .label { font-size: clamp(18px, 2.2vw, 28px); opacity: .95; }
+  #now-card .num {
+    font-size: clamp(56px, 8vw, 110px);
+    font-weight: 800;
+    line-height: 1;
+    background: #fff;
+    color: var(--green-dark);
+    border-radius: 16px;
+    padding: 10px 28px;
+    min-width: 120px;
+    text-align: center;
+  }
+  #now-card .name { font-size: clamp(36px, 5.5vw, 72px); font-weight: 700; }
+  #grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+  }
+  .card {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    border-left: 8px solid var(--green);
+  }
+  .card .num {
+    font-size: clamp(30px, 3.4vw, 46px);
+    font-weight: 800;
+    color: var(--green-dark);
+    min-width: 58px;
+    text-align: center;
+  }
+  .card .name { font-size: clamp(24px, 2.8vw, 38px); font-weight: 600; }
+  #empty {
+    display: none;
+    text-align: center;
+    padding: 80px 20px;
+    font-size: clamp(26px, 4vw, 48px);
+    color: #7a9187;
+  }
+  footer {
+    background: var(--green-dark);
+    color: #fff;
+    padding: 12px;
+    text-align: center;
+    font-size: clamp(15px, 1.8vw, 22px);
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>大竹院區｜領藥順序</h1>
+  <div id="status">載入中…</div>
+</header>
+<div id="stale">⚠ 資料連線更新中，順序可能非即時，請以現場叫號為準</div>
+<main>
+  <div id="now-card">
+    <span class="label">下一位<br>請取藥</span>
+    <span class="num" id="now-num">1</span>
+    <span class="name" id="now-name"></span>
+  </div>
+  <div id="grid"></div>
+  <div id="empty">目前沒有等候領藥的名單 🌿</div>
+</main>
+<footer>請憑健保卡至藥局櫃檯領藥｜順序依處方完成時間排列，每 5 秒自動更新</footer>
+
+<script>
+var CLINIC = '大竹院區';
+var POLL_MS = 5000;
+var STALE_SEC = 180; // 後端資料超過3分鐘沒更新就顯示警告
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function render(data) {
+  var list = data.list || [];
+  var nowCard = document.getElementById('now-card');
+  var grid = document.getElementById('grid');
+  var empty = document.getElementById('empty');
+
+  if (list.length === 0) {
+    nowCard.style.display = 'none';
+    grid.innerHTML = '';
+    empty.style.display = 'block';
+  } else {
+    empty.style.display = 'none';
+    var first = list[0];
+    document.getElementById('now-num').textContent = first.seq;
+    document.getElementById('now-name').textContent = first.name;
+    nowCard.style.display = 'flex';
+
+    var html = '';
+    for (var i = 1; i < list.length; i++) {
+      html += '<div class="card"><span class="num">' + list[i].seq +
+              '</span><span class="name">' + esc(list[i].name) + '</span></div>';
+    }
+    grid.innerHTML = html;
+  }
+
+  var upd = data.updated || '';
+  document.getElementById('status').innerHTML =
+    '等候人數 <b>' + list.length + '</b> 人<br>資料時間 ' + esc(upd || '—');
+
+  var stale = document.getElementById('stale');
+  var isStale = true;
+  if (upd) {
+    var t = new Date(upd.replace(/-/g, '/'));
+    if (!isNaN(t) && (Date.now() - t.getTime()) / 1000 < STALE_SEC) isStale = false;
+  }
+  stale.style.display = isStale ? 'block' : 'none';
+}
+
+function poll() {
+  if (typeof QUEUE_API === 'undefined' || !QUEUE_API) {
+    document.getElementById('status').textContent = '請先設定 config.js 的 QUEUE_API';
+    return;
+  }
+  fetch(QUEUE_API + '?action=get&clinic=' + encodeURIComponent(CLINIC))
+    .then(function (r) { return r.json(); })
+    .then(render)
+    .catch(function () {
+      document.getElementById('stale').style.display = 'block';
+    });
+}
+
+poll();
+setInterval(poll, POLL_MS);
+</script>
+</body>
+</html>
