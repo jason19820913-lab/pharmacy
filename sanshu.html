@@ -14,6 +14,7 @@
     --text: #1c2b24;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
   body {
     font-family: "Microsoft JhengHei", "PingFang TC", sans-serif;
     background: var(--bg);
@@ -25,84 +26,84 @@
   header {
     background: var(--green);
     color: #fff;
-    padding: 18px 28px;
+    padding: clamp(10px, 1.5vh, 22px) clamp(16px, 2vw, 36px);
     display: flex;
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
     gap: 8px;
   }
-  header h1 { font-size: clamp(26px, 4vw, 44px); font-weight: 700; }
-  #status { font-size: clamp(14px, 1.6vw, 20px); opacity: .9; text-align: right; }
+  header h1 { font-size: clamp(24px, 3.2vw, 54px); font-weight: 700; }
+  #status {
+    font-size: clamp(13px, 1.3vw, 22px);
+    opacity: .92;
+    text-align: right;
+    line-height: 1.4;
+  }
   #stale {
     display: none;
     background: #c0392b;
     color: #fff;
     text-align: center;
     padding: 8px;
-    font-size: clamp(14px, 1.8vw, 20px);
+    font-size: clamp(14px, 1.6vw, 24px);
   }
-  main { flex: 1; padding: 24px; }
-  #now-card {
-    background: var(--green);
-    color: #fff;
-    border-radius: 20px;
-    padding: 26px 30px;
-    margin-bottom: 24px;
-    display: none;
-    align-items: center;
-    gap: 26px;
-    box-shadow: 0 6px 18px rgba(26,127,78,.3);
-  }
-  #now-card .label { font-size: clamp(18px, 2.2vw, 28px); opacity: .95; }
-  #now-card .num {
-    font-size: clamp(56px, 8vw, 110px);
-    font-weight: 800;
-    line-height: 1;
-    background: #fff;
-    color: var(--green-dark);
-    border-radius: 16px;
-    padding: 10px 28px;
-    min-width: 120px;
-    text-align: center;
-  }
-  #now-card .name { font-size: clamp(36px, 5.5vw, 72px); font-weight: 700; }
+  main { flex: 1; padding: clamp(12px, 2vw, 32px); }
+
+  /* 領藥順序卡片：號碼 + 姓名，全部同等呈現 */
   #grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(clamp(260px, 30vw, 460px), 1fr));
+    gap: clamp(10px, 1.5vw, 24px);
   }
   .card {
     background: var(--card);
-    border-radius: 14px;
-    padding: 16px 20px;
+    border-radius: clamp(12px, 1.2vw, 22px);
+    padding: clamp(12px, 1.6vw, 28px) clamp(14px, 1.8vw, 30px);
     display: flex;
     align-items: center;
-    gap: 16px;
-    box-shadow: 0 2px 8px rgba(0,0,0,.08);
-    border-left: 8px solid var(--green);
+    gap: clamp(14px, 1.8vw, 30px);
+    box-shadow: 0 3px 10px rgba(0,0,0,.10);
   }
   .card .num {
-    font-size: clamp(30px, 3.4vw, 46px);
+    background: var(--green);
+    color: #fff;
+    border-radius: clamp(10px, 1vw, 18px);
+    font-size: clamp(40px, 5.5vw, 96px);
     font-weight: 800;
-    color: var(--green-dark);
-    min-width: 58px;
+    line-height: 1;
+    min-width: 1.6em;
+    padding: .18em .2em;
     text-align: center;
+    flex-shrink: 0;
   }
-  .card .name { font-size: clamp(24px, 2.8vw, 38px); font-weight: 600; }
+  .card .name {
+    font-size: clamp(38px, 5vw, 88px);
+    font-weight: 700;
+    letter-spacing: .04em;
+  }
   #empty {
     display: none;
     text-align: center;
-    padding: 80px 20px;
-    font-size: clamp(26px, 4vw, 48px);
+    padding: 12vh 20px;
+    font-size: clamp(28px, 4vw, 60px);
     color: #7a9187;
   }
   footer {
     background: var(--green-dark);
     color: #fff;
-    padding: 12px;
+    padding: clamp(8px, 1.2vh, 16px);
     text-align: center;
-    font-size: clamp(15px, 1.8vw, 22px);
+    font-size: clamp(14px, 1.5vw, 26px);
+  }
+
+  /* 直式平板/手機：單欄較窄卡片 */
+  @media (max-width: 600px) {
+    #grid { grid-template-columns: 1fr; }
+  }
+  /* 電視/大螢幕橫式：固定三欄，字再放大 */
+  @media (min-width: 1600px) {
+    #grid { grid-template-columns: repeat(3, 1fr); }
   }
 </style>
 </head>
@@ -113,15 +114,10 @@
 </header>
 <div id="stale">⚠ 資料連線更新中，順序可能非即時，請以現場叫號為準</div>
 <main>
-  <div id="now-card">
-    <span class="label">下一位<br>請取藥</span>
-    <span class="num" id="now-num">1</span>
-    <span class="name" id="now-name"></span>
-  </div>
   <div id="grid"></div>
   <div id="empty">目前沒有等候領藥的名單 🌿</div>
 </main>
-<footer>請憑健保卡至藥局櫃檯領藥｜順序依處方完成時間排列，每 5 秒自動更新</footer>
+<footer>請憑健保卡至藥局櫃檯領藥｜順序依調劑完成時間排列，自動更新</footer>
 
 <script>
 var CLINIC = '三樹院區';
@@ -134,23 +130,16 @@ function esc(s) {
 
 function render(data) {
   var list = data.list || [];
-  var nowCard = document.getElementById('now-card');
   var grid = document.getElementById('grid');
   var empty = document.getElementById('empty');
 
   if (list.length === 0) {
-    nowCard.style.display = 'none';
     grid.innerHTML = '';
     empty.style.display = 'block';
   } else {
     empty.style.display = 'none';
-    var first = list[0];
-    document.getElementById('now-num').textContent = first.seq;
-    document.getElementById('now-name').textContent = first.name;
-    nowCard.style.display = 'flex';
-
     var html = '';
-    for (var i = 1; i < list.length; i++) {
+    for (var i = 0; i < list.length; i++) {
       html += '<div class="card"><span class="num">' + list[i].seq +
               '</span><span class="name">' + esc(list[i].name) + '</span></div>';
     }
