@@ -48,6 +48,15 @@
     padding: 8px;
     font-size: clamp(14px, 1.6vw, 24px);
   }
+  #notice {
+    background: #fff7df;
+    color: #7a5a00;
+    border-bottom: 2px solid #f0d98c;
+    text-align: center;
+    padding: clamp(8px, 1.2vh, 16px);
+    font-size: clamp(16px, 2vw, 34px);
+    font-weight: 700;
+  }
   main { flex: 1; padding: clamp(12px, 2vw, 32px); }
 
   /* 領藥順序卡片：號碼 + 姓名，全部同等呈現 */
@@ -113,6 +122,7 @@
   <div id="status">載入中…</div>
 </header>
 <div id="stale">⚠ 資料連線更新中，順序可能非即時，請以現場叫號為準</div>
+<div id="notice">📋 如領第二、三次慢性處方箋，請直接告知藥師</div>
 <main>
   <div id="grid"></div>
   <div id="empty">目前沒有等候領藥的名單 🌿</div>
@@ -122,7 +132,8 @@
 <script>
 var CLINIC = '{{CLINIC}}';
 var POLL_MS = 5000;
-var STALE_SEC = 180; // 後端資料超過3分鐘沒更新就顯示警告
+var STALE_SEC = 300; // 資料時間超過5分鐘沒變動才顯示警告
+var _lastUpd = null, _lastChange = Date.now();
 
 function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -150,13 +161,13 @@ function render(data) {
   document.getElementById('status').innerHTML =
     '等候人數 <b>' + list.length + '</b> 人<br>資料時間 ' + esc(upd || '—');
 
-  var stale = document.getElementById('stale');
-  var isStale = true;
-  if (upd) {
-    var t = new Date(upd.replace(/-/g, '/'));
-    if (!isNaN(t) && (Date.now() - t.getTime()) / 1000 < STALE_SEC) isStale = false;
+  // 不比對裝置時鐘（電視/平板時間常不準），改看資料時間是否持續變動
+  if (upd !== _lastUpd) {
+    _lastUpd = upd;
+    _lastChange = Date.now();
   }
-  stale.style.display = isStale ? 'block' : 'none';
+  var isStale = (Date.now() - _lastChange) / 1000 > STALE_SEC;
+  document.getElementById('stale').style.display = isStale ? 'block' : 'none';
 }
 
 function poll() {
